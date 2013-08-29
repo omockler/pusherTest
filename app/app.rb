@@ -78,7 +78,7 @@ class App < Sinatra::Base
 		authenticate!
 		messages = settings.mongo_db.find({user_id: user_id, read: false}).to_a
 		messages.each do |m|
-			settings.mongo_db.remove {_id: m["_id"]}
+			settings.mongo_db.remove({_id: m["_id"]})
 		end
 		"Success"
 	end
