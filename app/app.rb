@@ -39,7 +39,7 @@ class App < Sinatra::Base
 	get '/messages' do
 		authenticate!
 		content_type :json
-		settings.mongo_db.find({user_id: user_id}).to_a.map do |m| 
+		settings.mongo_db.find({user_id: user_id, dismissed: false}).to_a.map do |m| 
 			m["_id"] = m["_id"].to_s
 			m
 		end.to_json
@@ -55,18 +55,18 @@ class App < Sinatra::Base
 	end
 
 	get '/post-message?' do
-		message = {message: params[:message], read: false, dissmissed: false}
+		message = {message: params[:message], read: false, dismissed: false}
 		
 		if params[:all]
 			(1..3).each do |i|
 				local_message = message.clone
-				local_message[:user_id] = i
-				local_message[:_id] = settings.mongo_db.insert local_message
+				local_message[:user_id] = i.to_s
+				local_message[:_id] = settings.mongo_db.insert(local_message).to_s
 				Pusher.trigger("private-user-#{i}", "my_event", local_message)
 			end
 		elsif params[:user_id]
 			message[:user_id] = params[:user_id]
-			message[:_id] = settings.mongo_db.insert message
+			message[:_id] = settings.mongo_db.insert(message).to_s
 			Pusher.trigger("private-user-#{params[:user_id]}", "my_event", message)
 		else
 			halt 400, "Specify recipients" unless channel
@@ -78,7 +78,7 @@ class App < Sinatra::Base
 		authenticate!
 		messages = settings.mongo_db.find({user_id: user_id, read: false}).to_a
 		messages.each do |m|
-			settings.mongo_db.remove({_id: m["_id"]})
+			settings.mongo_db.update({_id: m["_id"]}, {"$set" => {read: true}})
 		end
 		"Success"
 	end
@@ -88,7 +88,7 @@ class App < Sinatra::Base
 		message_id = BSON::ObjectId.from_string(params[:message_id])
 		message = settings.mongo_db.find_one(_id: message_id)
 		halt 400, "Not a valid message id" unless message["user_id"] == user_id
-		settings.mongo_db.remove({_id: message_id})
+		settings.mongo_db.update({_id: message_id}, {"$set" => {dismissed: true}})
 		"Success"
 	end
 end

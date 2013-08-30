@@ -13,11 +13,11 @@ $().ready(function () {
 	$('.dropdown-toggle').click(function () {
 		var link = $(this);
 		var ddContainer = link.parent();
-		if (parent.hasClass('open')) {
+		if (ddContainer.hasClass('open')) {
 			$.post('/mark-read', vm.markRead());
-			parent.removeClass('open');
+			ddContainer.removeClass('open');
 		} else {
-			link.parent().addClass('open');
+			ddContainer.addClass('open');
 		}
 	});
 
@@ -59,6 +59,7 @@ function ViewModel () {
 	return {
 		messages: messages,
 		messageCount: messageCount,
+		markRead: markRead,
 		dismiss: dismiss
 	};
 }
